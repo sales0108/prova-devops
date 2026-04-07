@@ -35,21 +35,18 @@ spec:
           initialDelaySeconds: 2
           timeoutSeconds: 30
           periodSeconds: 20
-
-        env:
-          {{- range $key, $value := .Values.global.ENV_VARS }}
-          - name: {{ $key }}
-            value: "{{ $value }}"
-          {{- end }}
-
-        command: ["./myapp"]
-
-        resources:
-          requests:
-            memory: "{{ .Values.global.MEM }}"
-            cpu: "{{ .Values.global.CPU }}"
-          limits:
-            memory: "{{ .Values.global.MEM_LIMITS }}"
-            cpu: "{{ .Values.global.CPU_LIMITS }}"
-        ports:
-        - containerPort: {{ .Values.global.CONTAINER_PORT }}
+      env:
+        {{- range $key, $value := .Values.global.ENV_VARS }}
+        - name: {{ $key }}
+          value: "{{ $value }}"
+        {{- end }}
+      command: ["./myapp"]
+      resources:
+        requests:
+          memory: "{{ .Values.global.MEM }}"
+          cpu: "{{ .Values.global.CPU }}"
+        limits:
+          memory: "{{ .Values.global.MEM_LIMITS }}"
+          cpu: "{{ .Values.global.CPU_LIMITS }}"
+      ports:
+      - containerPort: {{ .Values.global.CONTAINER_PORT }}
