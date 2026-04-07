@@ -15,6 +15,8 @@ FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
 
+RUN apk update && apk upgrade --no-cache
+
 WORKDIR /root/
 
 COPY --from=builder /myapp .
