@@ -1,56 +1,67 @@
-Documentação de Infraestrutura e CI/CD: Go-API no EKS
-Esta documentação descreve a implementação de uma esteira automatizada de entrega contínua, utilizando práticas modernas de segurança e monitoramento em um cluster AWS EKS.
+# 🚀 Go-API Infrastructure & CI/CD no AWS EKS
 
-1. Arquitetura da Solução
-A solução utiliza uma abordagem de separação de responsabilidades:
+![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+![Helm](https://img.shields.io/badge/helm-%230F1628.svg?style=for-the-badge&logo=helm&logoColor=white)
 
-CI (Integração Contínua): Build e Scan de segurança.
+Este repositório contém a implementação de uma esteira automatizada de entrega contínua (CI/CD), utilizando práticas modernas de segurança, alta disponibilidade e monitoramento em um cluster **AWS EKS**.
 
-CD (Entrega Contínua): Deploy automatizado via Helm.
+---
 
-Ingress: Traefik como porta de entrada única.
+## 🏗️ Arquitetura da Solução
 
-Monitoramento: Stack Kube-Prometheus para observabilidade.
+A solução segue o princípio de separação de responsabilidades:
 
-2. Pipeline de CI/CD (GitHub Actions)
-A pipeline foi dividida em dois arquivos para garantir que o deploy só ocorra após um build bem-sucedido e seguro.
+* **CI (Integração Contínua):** Build otimizado e análise de vulnerabilidades.
+* **CD (Entrega Contínua):** Deploy automatizado via Helm em múltiplos ambientes.
+* **Ingress Controller:** **Traefik** como porta de entrada única para o cluster.
+* **Observabilidade:** Stack **Kube-Prometheus** para métricas e dashboards.
 
-2.1. Workflow de Build e Scan (build.yml)
-Este workflow é responsável por:
+---
 
-Build Docker: Compila a aplicação Go usando um Dockerfile multi-stage. Foi configurado o multi-stage para a imagem ficar menor e mais eficiente antes a imagem dava 800mb hoje da 15mb 
+## ⚙️ Pipeline de CI/CD (GitHub Actions)
 
-Trivy Scan: Varre a imagem em busca de vulnerabilidades CRITICAL e HIGH. Se encontradas, a pipeline falha (exit code 1).Por esse modivo foi atualizado o go e o alpine para versões mais recentes devido a falhas de segurança 
+A pipeline é dividida em dois workflows desacoplados para garantir que o deploy só ocorra após a validação total do build.
 
-ECR Push: Envia a imagem para o Amazon ECR com a tag do commit (github.sha). COm tag latest e hash para facilitar o deploy
+### 1. Build e Scan (`build.yml`)
+* **Docker Multi-stage:** Otimizamos o Dockerfile para reduzir a superfície de ataque e o custo de armazenamento.
+    * *Resultado:* Imagem reduzida de **800MB** para apenas **15MB**.
+* **Segurança (Trivy):** Varredura automática em busca de vulnerabilidades `CRITICAL` e `HIGH`.
+    * *Ação:* Atualizamos o **Go** e o **Alpine** para as versões mais recentes para mitigar falhas conhecidas.
+* **Amazon ECR:** Envio da imagem com tags duplicadas (`latest` e `hash do commit`) para facilitar o rastreio e rollback.
 
-2.2. Workflow de Deploy (deploy.yml)
-Este workflow "escuta" o término do build e executa:
+### 2. Deploy (`deploy.yml`)
+Este workflow é disparado automaticamente após o sucesso do build:
+* **Contexto AWS:** Configuração dinâmica do `kubeconfig` para o cluster EKS.
+* **Helm Deploy:** Gerenciamento do ciclo de vida da aplicação.
+    ```bash
+    helm upgrade --install go-api ./k8s/helm/go-api \
+      --namespace go-app-dev \
+      -f ./k8s/helm/values-dev.yaml \
+      --set global.CONTAINER_GIT_HASH=${{ github.sha }} \
+      --wait
+    ```
 
-Autenticação AWS: Configura as credenciais e o contexto do cluster EKS.
+---
 
-Helm Upgrade: Realiza o deploy ou atualização da aplicação usando o comando:
-Utilizado o Helm para facilidade de implementação para varios ambientes dev e prod e reutilização de codigo futuro
+## 📦 Estrutura do Helm Chart
 
-Bash
-helm upgrade --install go-api ./k8s/helm/go-api \
-  --namespace go-app-dev \
-  -f ./k8s/helm/values-dev.yaml \
-  --set global.CONTAINER_GIT_HASH=${{ github.sha }} \
-  --wait
-3. Estrutura do Helm Chart
-O Helm Chart foi customizado para suportar múltiplos ambientes através de arquivos de valores específicos (values-dev.yaml).
+O Chart foi desenhado para ser reutilizável entre ambientes (Dev/Prod).
 
-Manifesto de Deployment (deployment.yaml)
+* **HPA (Horizontal Pod Autoscaler):** Configurado para escalar a aplicação automaticamente sob carga.
+* **Resources & Limits:** Definição estrita de CPU e Memória para evitar que um Pod consuma todos os recursos do nó.
+* **Segurança do Runtime:** Aplicação configurada para rodar como **Non-Root User (UID 65534)**.
+* **Probes:** Implementação de `liveness` e `readiness` no endpoint `/healthz`.
 
-Probes: Healthchecks configurados em /healthz.
+---
 
-Recursos: Limites de CPU e Memória definidos para evitar o consumo desenfreado do cluster.
+## 🌐 Serviços de Infraestrutura (Shared Services)
 
-Segurança: Configurado para rodar com usuário não-root (65534).
-
-Hpa configurado para auto-scalling da aplicação 
-
+### Traefik Ingress Controller
+Responsável por expor a aplicação para a internet através de um **AWS Load Balancer**.
+```bash
+helm upgrade --install traefik traefik/traefik --namespace traefik --create-namespace
 
 4. Infraestrutura de Suporte (Shared Services)
 Instalamos serviços essenciais no cluster para gerenciar o tráfego e a saúde da aplicação.
