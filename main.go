@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	fmt.Println("Aplicação iniciando... Aguardando 10 segundos de aquecimento.")
-	time.Sleep(10 * time.Second)
+	fmt.Println("Aplicação iniciando... Aguardando 1 segundo de aquecimento.")
+	time.Sleep(1 * time.Second)
 	fmt.Println("Aplicação pronta e rodando na porta 8080.")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

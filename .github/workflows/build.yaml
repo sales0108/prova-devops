@@ -1,0 +1,54 @@
+name: CI Pipeline - Build & Scan
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: us-west-1
+  ECR_REPOSITORY: devops/prova/go-api
+  REGISTRY: 363838752048.dkr.ecr.us-west-1.amazonaws.com
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Configurar Credenciais AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 2. Login no Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 3. Build da Imagem Docker
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+      # 4. Scan de Vulnerabilidades com Trivy
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1' # Faz a pipeline falhar se encontrar vulnerabilidades CRITICAL
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # 5. Push para o ECR (Só ocorre se o Trivy passar)
+      - name: Push image to Amazon ECR
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
