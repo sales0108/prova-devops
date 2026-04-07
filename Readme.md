@@ -56,45 +56,59 @@ O Chart foi desenhado para ser reutilizável entre ambientes (Dev/Prod).
 
 ---
 
-## 🌐 Serviços de Infraestrutura (Shared Services)
+## 🛠️ 4. Infraestrutura de Suporte (Shared Services)
 
-### Traefik Ingress Controller
-Responsável por expor a aplicação para a internet através de um **AWS Load Balancer**.
-```bash
-helm upgrade --install traefik traefik/traefik --namespace traefik --create-namespace
+Para garantir alta disponibilidade, gerenciamento de tráfego e saúde da aplicação, instalamos serviços essenciais utilizando Helm.
 
-4. Infraestrutura de Suporte (Shared Services)
-Instalamos serviços essenciais no cluster para gerenciar o tráfego e a saúde da aplicação.
+---
 
-4.1. Traefik Ingress Controller
-Instalado via Helm para expor a aplicação através de um único Load Balancer na AWS.
+### 🚦 4.1. Traefik Ingress Controller
+O **Traefik** atua como o ponto de entrada único (Ingress Controller) para o cluster, gerenciando o tráfego externo através de um **AWS Load Balancer**.
 
-Comando de Instalação:
+* **Instalação:**
+    ```bash
+    helm upgrade --install traefik traefik/traefik \
+      --namespace traefik \
+      --create-namespace
+    ```
+* **Ingress Rule:** Configuramos regras de roteamento para mapear o DNS do Load Balancer diretamente para o `go-api-service`, eliminando a necessidade de múltiplos IPs externos.
 
-helm upgrade --install traefik traefik/traefik --namespace traefik --create-namespace
-Ingress: Criamos uma regra de Ingress para mapear o DNS do Load Balancer diretamente para o go-api-service.
+---
 
-4.2. Kube-Prometheus-Stack
-Utilizado para coletar métricas e visualizar dashboards no Grafana.
+### 📊 4.2. Kube-Prometheus-Stack
+Implementação da stack completa de observabilidade (**Prometheus + Grafana**) para coleta de métricas e visualização de saúde do cluster.
 
-Monitoramento da App: Adicionamos anotações ao serviço Go para que o Prometheus colete métricas automaticamente:
+#### 🧲 Monitoramento da Aplicação
+A aplicação é monitorada automaticamente através de **Service Discovery**. Adicionamos as seguintes anotações ao serviço da aplicação:
 
-prometheus.io/scrape: "true"
+| Anotação | Valor | Descrição |
+| :--- | :--- | :--- |
+| `prometheus.io/scrape` | `"true"` | Ativa a coleta automática |
+| `prometheus.io/port` | `"8080"` | Porta onde a aplicação expõe as métricas |
 
-prometheus.io/port: "8080"
+#### 🔐 Acesso ao Grafana
+O acesso ao dashboard do Grafana é feito de forma segura via `port-forward`.
 
-para ter acesso ao grafana será feito por port-ford e a senha e gerado com o comandos abaixo:
+1.  **Recuperar senha do administrador:**
+    ```bash
+    kubectl get secret --namespace monitoring -l app.kubernetes.io/component=admin-secret -o jsonpath="{.items[0].data.admin-password}" | base64 --decode ; echo
+    ```
 
-kubectl get secret --namespace monitoring -l app.kubernetes.io/component=admin-secret -o jsonpath="{.items[0].data.admin-password}" | base64 --decode ; echo
+2.  **Expor o Grafana localmente:**
+    ```bash
+    # Redireciona a porta 3000 do serviço para sua máquina
+    kubectl --namespace monitoring port-forward svc/kube-stack-grafana 3000:80
+    ```
+    > Acesse em seu navegador: `http://localhost:3000`
 
-Expor o grafana:
+---
 
-kubectl --namespace monitoring port-forward $POD_NAME 3000
+## 📈 5. Roadmap de Melhorias
 
-5. Melhorias
+- [ ] **Cert-Manager:** Provisionamento automático de certificados TLS/SSL (HTTPS) via Let's Encrypt.
+- [ ] **AlertManager:** Configuração de disparos de alertas para canais como Slack ou E-mail em caso de downtime.
+- [ ] **Log Centralization:** Implementação de Loki ou ELK Stack para persistência de logs.
 
-Cert-Manager: Instalar para gerenciar certificados SSL (HTTPS) automaticamente via Let's Encrypt.
+---
 
-AlertManager: Configurar alertas no Prometheus para avisar no Slack/E-mail caso a API fique offline.
-
-Status da Infraestrutura: 🟢 Operacional e Automatizada.
+### 🟢 Status da Infraestrutura: `Operacional e Automatizada`
