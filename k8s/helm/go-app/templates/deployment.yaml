@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - name: {{ .Values.global.APP_NAME }}
-        image: {{ .Values.global.CONTAINER_IMAGE }}{{ if .Values.global.ARGO }}:{{ else }}@{{ end }}{{ .Values.global.CONTAINER_GIT_HASH }}
+        image: {{ .Values.global.CONTAINER_IMAGE }}:{{ .Values.global.CONTAINER_GIT_HASH }}
         imagePullPolicy: Always
       readinessProbe:
           httpGet:
