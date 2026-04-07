@@ -36,7 +36,7 @@ Este workflow é disparado automaticamente após o sucesso do build:
 * **Contexto AWS:** Configuração dinâmica do `kubeconfig` para o cluster EKS.
 * **Helm Deploy:** Gerenciamento do ciclo de vida da aplicação.
     ```bash
-    helm upgrade --install go-api ./k8s/helm/go-api \
+    helm upgrade --install go-app ./k8s/helm/go-app \
       --namespace go-app-dev \
       -f ./k8s/helm/values-dev.yaml \
       --set global.CONTAINER_GIT_HASH=${{ github.sha }} \
