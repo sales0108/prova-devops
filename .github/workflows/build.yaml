@@ -6,7 +6,7 @@ on:
 
 env:
   AWS_REGION: us-west-1
-  ECR_REPOSITORY: devops/prova/go-api
+  ECR_REPOSITORY: devops/prova
   REGISTRY: 363838752048.dkr.ecr.us-west-1.amazonaws.com
 
 jobs:
