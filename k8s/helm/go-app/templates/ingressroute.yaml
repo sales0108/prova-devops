@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.global.INGRESS_NAME }}
+  namespace: {{ .Values.global.NAMESPACE }}
+  annotations:
+    # Diz ao Kubernetes que o Traefik é quem manda aqui
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: "a9f458dd47dda4362ade485e87aeb3eb-202d9fccf274d19f.elb.us-west-1.amazonaws.com"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.global.SERVICE_NAME }} # Nome do seu serviço (confira no seu svc)
+            port:
+              number: 80 # Porta que o SERVICE expõe
