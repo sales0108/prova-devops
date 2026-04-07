@@ -1,0 +1,27 @@
+global:
+  CLUSTER: EKS-NCalifornia
+  NAMESPACE: go-app-dev
+  APP_NAME: go-app-app
+  DEPLOY_NAME: go-app-deploy
+  SERVICE_NAME: go-app-service
+  CONTAINER_IMAGE: 363838752048.dkr.ecr.us-west-1.amazonaws.com/devops/prova
+  CONTAINER_GIT_HASH: 'latest'
+  CPU: 40m
+  CPU_LIMITS: 40m
+  MEM: 75Mi
+  MEM_LIMITS: 75Mi
+  AUTOSCALE_MINIMO: 1
+  AUTOSCALE_MAXIMO: 3
+  CPU_HPA: 80
+  #INGRESS_NAME: go-app-traefik
+  #INGRESS_HOST_NAME: go.api.test.com.br
+  #SSL_CERT: cert-go-app
+  USE_VOLUMES: "False"
+  UNAVAILABLE: 0
+  SURGE: 1
+  CONTAINER_PORT: 8080
+  TYPE_SERVICE: LoadBalancer  
+  
+  ENV_VARS:
+    PORT: "8080"
+    LOG: "info"

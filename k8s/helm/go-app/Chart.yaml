@@ -1,0 +1,6 @@
+# mywebapp/Chart.yaml
+
+apiVersion: v2
+name: go-app
+version: 0.1.0
+description: A Helm chart go-app

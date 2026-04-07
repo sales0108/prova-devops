@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.global.SERVICE_NAME }}
+  namespace: {{ .Values.global.NAMESPACE }}
+spec:
+  selector:
+    app: {{ .Values.global.APP_NAME }}
+  type: {{ .Values.global.TYPE_SERVICE }} 
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: {{ .Values.global.CONTAINER_PORT }}

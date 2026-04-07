@@ -1,12 +1,51 @@
-name: Deploy to EKS
+name: CD-Deploy-to-EKS
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["CI-Build-and-Push"] # Deve ser o NOME exato do primeiro workflow
+    types:
+      - completed
+
+env:
+  AWS_REGION: us-west-1
+  CLUSTER_NAME: EKS-NCalifornia # Ou use ${{ secrets.CLUSTER_NAME }}
+  ECR_REGISTRY: 363838752048.dkr.ecr.us-west-1.amazonaws.com
+  ECR_REPOSITORY: devops/prova
+  CHART_PATH: ./charts/myapp # Caminho onde está o seu Chart.yaml
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Autenticação na AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 2. Configurar o acesso ao Cluster EKS
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
+
+      # 3. Instalar o Helm no Runner
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      # 4. Executar o Helm Upgrade/Install
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install go-app ./k8s/helm/go-app \
+            --namespace go-app-dev \
+            --create-namespace \
+            -f ./k8s/helm/values-dev.yaml \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }} \
+            --set image.tag=${{ github.sha }} \
+            --wait

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kubectl.kubernetes.io/change-cause: "{{ .Values.changeCause | default (now | date "2006-01-02 15:04:05") }}"
+  name: {{ .Values.global.DEPLOY_NAME }}
+  namespace: {{ .Values.global.NAMESPACE }}
+  labels:
+    app: {{ .Values.global.APP_NAME }}
+spec:
+  replicas: {{ .Values.global.AUTOSCALE_MINIMO }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: {{ .Values.global.UNAVAILABLE }}
+      maxSurge: {{ .Values.global.SURGE }}
+  selector:
+    matchLabels:
+      app: {{ .Values.global.APP_NAME }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.global.APP_NAME }}
+      annotations:
+        kubectl.kubernetes.io/change-cause: "{{ .Values.changeCause | default (now | date "2006-01-02 15:04:05") }}"
+    spec:
+      containers:
+      - name: {{ .Values.global.APP_NAME }}
+        image: {{ .Values.global.CONTAINER_IMAGE }}{{ if .Values.global.ARGO }}:{{ else }}@{{ end }}{{ .Values.global.CONTAINER_GIT_HASH }}
+        imagePullPolicy: Always
+{{- end }}  
+      readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.global.CONTAINER_PORT }}
+          initialDelaySeconds: 2
+          timeoutSeconds: 30
+          periodSeconds: 20
+
+        env:
+          {{- range $key, $value := .Values.global.ENV_VARS }}
+          - name: {{ $key }}
+            value: "{{ $value }}"
+          {{- end }}
+
+        command: ["./myapp"]
+
+        resources:
+          requests:
+            memory: "{{ .Values.global.MEM }}"
+            cpu: "{{ .Values.global.CPU }}"
+          limits:
+            memory: "{{ .Values.global.MEM_LIMITS }}"
+            cpu: "{{ .Values.global.CPU_LIMITS }}"
+        ports:
+        - containerPort: {{ .Values.global.CONTAINER_PORT }}
